@@ -1,68 +1,85 @@
 name: Pipeline Corporativo de Integracion Continua
-on:
-push:
-branches: [ main ]
-pull_request:
-branches: [ main ]
-jobs:
-static -quality:
-runs -on: ubuntu -latest
-steps:
-- name: Descargar codigo fuente del repositorio
-uses: actions/checkout@v3
-- name: Configurar entorno de ejecucion Node.js (v20)
-uses: actions/setup -node@v3
-with:
-node -version: '20'
-cache: 'npm '
-- name: Instalar dependencias limpias del proyecto
-run: npm ci
-- name: Validar formato del codigo (Prettier Check)
-run: npx prettier --check "src /**/*.{ts ,js}"
-- name: Analisis estatico de sintaxis (ESLint)
-run: npx eslint "src /**/*. ts"
-unit -testing:
-runs -on: ubuntu -latest
-needs: static -quality
-steps:
-- name: Descargar codigo fuente del repositorio
-uses: actions/checkout@v3
-- name: Configurar entorno de ejecucion Node.js
-uses: actions/setup -node@v3
-with:
-node -version: '20'
-cache: 'npm '
-- name: Instalar dependencias limpias
-run: npm ci
-- name: Ejecutar suite de pruebas de software
-run: npm test -- --coverage
-build -and -compile:
-runs -on: ubuntu -latest
-needs: unit -testing
-steps:
-- name: Descargar codigo fuente del repositorio
-uses: actions/checkout@v3
-- name: Configurar Node.js
-uses: actions/setup -node@v3
-with:
-node -version: '20'
-cache: 'npm '
-- name: Instalar dependencias limpias
-run: npm ci
-- name: Compilar codigo TypeScript a JavaScript de produccion
-run: npm run build
-deploy -to -cloud:
-runs -on: ubuntu -latest
-needs: build -and -compile
-if: github.ref == 'refs/heads/main ' && github.event_name == 'push '
-steps:
-- name: Despliegue seguro simulado en infraestructura Cloud
-run: |
-echo "============================================= "
-echo "INICIANDO DESPLIEGUE SEGURO EN PRODUCCION ..."
-echo "============================================= "
 
-echo "Conectando con el servidor Cloud seguro ..."
-echo "Desplegando aplicacion desde la compilacion estable ..."
-echo "Proceso completado con exito. Hash de referencia: ${{ github.
-sha }}"
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  static-quality:
+    name: Calidad Estatica
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar codigo fuente del repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar entorno de ejecucion Node.js (v20)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Instalar dependencias limpias del proyecto
+        run: npm ci
+
+      - name: Validar formato del codigo (Prettier Check)
+        run: npx prettier --check "src/**/*.{ts,js}"
+
+      - name: Analisis estatico de sintaxis (ESLint)
+        run: npx eslint "src/**/*.js"
+
+  unit-testing:
+    name: Pruebas Unitarias
+    runs-on: ubuntu-latest
+    needs: static-quality
+    steps:
+      - name: Descargar codigo fuente del repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar entorno de ejecucion Node.js (v20)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Instalar dependencias limpias
+        run: npm ci
+
+      - name: Ejecutar suite de pruebas de software
+        run: npm test
+
+  build-and-compile:
+    name: Build y Compilacion
+    runs-on: ubuntu-latest
+    needs: unit-testing
+    steps:
+      - name: Descargar codigo fuente del repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js (v20)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Instalar dependencias limpias
+        run: npm ci
+
+      - name: Compilar codigo TypeScript a JavaScript de produccion
+        run: npm run build
+
+  deploy-to-cloud:
+    name: Deploy Simulado
+    runs-on: ubuntu-latest
+    needs: build-and-compile
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: Despliegue seguro simulado en infraestructura Cloud
+        run: |
+          echo "============================================="
+          echo "INICIANDO DESPLIEGUE SEGURO EN PRODUCCION..."
+          echo "============================================="
+          echo "Conectando con el servidor Cloud seguro..."
+          echo "Desplegando aplicacion desde la compilacion estable..."
+          echo "Proceso completado con exito. Hash de referencia: ${{ github.sha }}"
