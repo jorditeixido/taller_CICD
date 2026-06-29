@@ -1,5 +1,5 @@
 function saludar(nombre) {
-  return `Hola ${nombre}`;
+  return `Holax ${nombre}`;
 }
 
 console.log(saludar('Jordi'));
